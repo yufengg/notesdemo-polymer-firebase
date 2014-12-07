@@ -1,0 +1,250 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/font-roboto/roboto.html">
+
+<link rel="import" href="bower_components/core-drawer-panel/core-drawer-panel.html">
+<link rel="import" href="bower_components/core-header-panel/core-header-panel.html">
+<link rel="import" href="bower_components/core-toolbar/core-toolbar.html">
+
+<link rel="import" href="bower_components/core-icons/core-icons.html">
+<link rel="import" href="bower_components/paper-icon-button/paper-icon-button.html">
+
+<link rel="import" href="bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="bower_components/paper-input/paper-input.html">
+
+<link rel="import" href="bower_components/paper-checkbox/paper-checkbox.html">
+
+<link rel="import" href="bower_components/core-localstorage/core-localstorage.html">
+
+<link rel="import" href="bower_components/core-item/core-item.html">
+<link rel="import" href="bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="bower_components/paper-slider/paper-slider.html">
+<link rel="import" href="bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="bower_components/paper-button/paper-button.html">
+
+<link rel="import" href="bower_components/paper-shadow/paper-shadow.html">
+<link rel="import" href="bower_components/paper-ripple/paper-ripple.html">
+
+<script src="https://cdn.firebase.com/js/client/1.1.2/firebase.js"></script>
+<link rel="import" href="bower_components/firebase-element/firebase-element.html">
+
+
+<polymer-element name="codelab-app">
+<template>
+  <link rel="stylesheet" href="styles.css">
+
+  <firebase-element
+     id="base"
+     location="{{firebaseURL}}"
+     data="{{listdata}}"
+     on-data-change="{{fbDataChanged}}"
+     keys="{{fbkeys}}"
+     childEvents
+     on-child-added="{{childEvent}}"
+     on-child-removed="{{childEvent}}"
+     on-child-changed="{{childEvent}}"
+     >
+  </firebase-element>
+
+  <core-drawer-panel responsiveWidth="600px" id="drawerPanel" narrow="{{narrow}}">
+
+    <core-header-panel drawer mode="waterfall">
+      <core-toolbar class="{{ {tall : !narrow} | tokenList }}">
+        Menu
+      </core-toolbar>
+
+      <core-item>
+        <label flex>Fade out selected</label>
+        <paper-toggle-button class="blue" checked="{{fadeSelected}}">
+        </paper-toggle-button>
+      </core-item>
+
+      <core-item>
+        <label flex>Delete selected</label>
+        <paper-icon-button icon="delete" on-click="{{delete}}"></paper-icon-button>
+      </core-item>
+
+      <core-item>
+        <div center horizontal layout>
+          <div>Font size</div>
+          <paper-slider value="{{fontSize}}" max="32" editable></paper-slider>
+        </div>
+      </core-item>
+
+      <core-item>
+        <paper-button raised class="colored" on-click="{{reset}}">
+          reset
+        </paper-button>
+      </core-item>
+
+      <paper-toast id="toast" class="capsule" text="Settings have been reset!"
+               duration="1800"></paper-toast>
+
+    </core-header-panel>
+
+    <core-header-panel main mode="waterfall">
+      <core-toolbar class="{{ {tall : !narrow} | tokenList }}">
+        <paper-icon-button on-click="{{toggleDrawer}}" icon="menu"></paper-icon-button>
+        <div on-click="{{toggleDrawer}}">
+          <span flex>
+            My notes
+            <paper-ripple class="recenteringTouch" fit></paper-ripple>
+          </span>
+        </div>
+        <span flex> </flex>
+        <paper-icon-button icon="search" on-click="{{searchClick}}"></paper-icon-button>
+        <paper-icon-button icon="more-vert"></paper-icon-button>
+
+        <paper-fab icon="icons:add" on-click="{{showNewNoteInput}}"></paper-fab>
+
+      </core-toolbar>
+
+      <div class="content" data-fade-selected="{{fadeSelected}}">
+        <paper-input id="newNoteInput"
+                     floatingLabel
+                     label="Add a new note"
+                     value="{{newNote}}"
+                     on-change="{{add}}">
+        </paper-input>
+
+        <template repeat="{{key in fbkeys}}" >
+          <div center horizontal layout class="item" data-done="{{listdata[key].done}}">
+            <paper-checkbox data-key="{{key}}" class="checkbox" checked="{{listdata[key].done}}" on-change="{{dataChanged}}"></paper-checkbox>
+            <div flex class="card" on-click="{{toggleSelected}}">
+              <paper-shadow z="2">
+                <p>{{listdata[key].body}}</p>
+              </paper-shadow>
+              <paper-ripple class="recenteringTouch" fit></paper-ripple>
+            </div>
+          </div>
+        </template>
+
+      </div>
+
+    </core-header-panel>
+
+  </core-drawer-panel>
+
+<!--  <core-localstorage id="storage" name="codelab-app-storage" value="{{data}}"></core-localstorage>
+-->
+
+
+
+</template>
+<script>
+  Polymer({
+      // this is unneeded since this.$.base.ref gets you the same obj
+      // fireb: new Firebase('https://blistering-fire-7537.firebaseio.com/notesdemo'),
+      toggleDrawer: function() {
+        console.log('toggle clicked!');
+        this.$.drawerPanel.togglePanel();
+      },
+      searchClick: function() {
+        console.log('Search clicked');
+      },
+      ready: function() {
+        this.$.newNoteInput.style.display = 'none';
+      },
+      showNewNoteInput: function() {
+        this.$.newNoteInput.style.display = 'block';
+      },
+      //listdata: [], // uncomment to reset the data each time page reloads
+      add: function() {
+        console.log("Adding note: " + this.newNote);
+
+        // 2 ways of getting the keys of the listdata
+        console.log('base.keys');
+        for (k in this.$.base.keys) {
+          console.log(this.$.base.keys[k]);
+        }
+        console.log('fbkeys:');
+        for (k in this.fbkeys) {
+          console.log('  ' + this.fbkeys[k]);
+        }
+
+        if (this.newNote) {
+          // add to firebase, and let databinding update the local
+          this.$.base.push({
+            body: this.newNote,
+            done: false
+          });
+
+          this.$.newNoteInput.style.display = 'none';
+          this.$.newNoteInput.value = null;
+
+        }
+
+        console.log("this.listdata: ");
+        for ( i in this.listdata) {
+          console.log("    " + i + ': ' +
+            this.listdata[i].body + " | " +
+            this.listdata[i].done);
+        }
+      },
+      toggleAll: function() {
+        var checks = this.shadowRoot.querySelectorAll('.checkbox');
+        for (var i = 0; i < checks.length; i++) {
+          console.log('checks: ' + checks[i]);
+          checks[i].checked = !checks[i].checked;
+        }
+      },
+      // this is just extra sprinkles to make checkbox toggle when box is clicked
+      toggleSelected: function(change) {
+        var datakey = change.srcElement.parentNode.previousElementSibling.dataset.key;
+        console.log(datakey);
+        this.listdata[datakey].done = !this.listdata[datakey].done;
+        this.$.base.commitProperty(datakey);
+      },
+      dataChanged: function(change) {
+        var datakey = change.srcElement.dataset.key;
+        // value has already been changed (.done is bound to the attr)
+        this.$.base.commitProperty(datakey);
+      },
+      fbDataChanged: function(snapshot) {
+        console.log('firebase data changed: ' + snapshot);
+      },
+      childEvent: function(event) {
+        // console.log(event.target); // the html element that event came from
+        console.log(event.type);
+        console.log('Event ' + event.type +
+        ': ' + event.detail.name +
+        ' ==> ' + event.detail.value.body +
+        ' | ' + event.detail.value.done);
+      },
+      filter: function(obj, predicate) {
+        var result = {};
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key) && predicate(obj[key], key, obj)) {
+                result[key] = obj[key];
+            }
+        }
+        return result;
+      },
+      delete: function(e) {  // TODO: Need to push this change to server
+        this.listdata = this.filter(this.listdata, function(item, key) {
+          console.log('  filtering: ' + key + ': ' + item.body + ' | ' + item.done);
+          // This line is unneeded, because the data binding takes care of it.
+          // We could choose to remove it on the server side and have it reflect on the
+          // UI as well, in which case we would do something like this:
+          // if (item.done = true) this.$.base.ref.child(key).remove();
+          return !item.done;
+        });
+      },
+      fontSize: 14,
+      fontSizeChanged: function() {
+        var cards = this.shadowRoot.querySelectorAll('.card');
+        for (var i = 0; i < cards.length; i++) {
+          cards[i].style.fontSize = this.fontSize + 'px';
+        }
+      },
+      reset: function() {
+        this.fontSize = 14;
+        this.fadeSelected = false;
+        this.$.toast.show();
+      },
+      firebaseURL: "https://blistering-fire-7537.firebaseio.com/notesdemo"
+
+    });
+
+</script>
+</polymer-element>
