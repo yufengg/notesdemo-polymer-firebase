@@ -60,3 +60,7 @@ paper-button[raised].colored {
   color: #fff;
   fill: #fff;
 }
+
+paper-checkbox::shadow paper-ripple {
+  color: blue;
+}

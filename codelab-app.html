@@ -85,13 +85,7 @@
     <core-header-panel main mode="waterfall">
       <core-toolbar class="{{ {tall : !narrow} | tokenList }}">
         <paper-icon-button on-click="{{toggleDrawer}}" icon="menu"></paper-icon-button>
-        <div on-click="{{toggleDrawer}}">
-          <span flex>
-            My notes
-            <paper-ripple class="recenteringTouch" fit></paper-ripple>
-          </span>
-        </div>
-        <span flex> </flex>
+        <span flex>My notes</span>
         <paper-icon-button icon="search" on-click="{{searchClick}}"></paper-icon-button>
         <paper-icon-button icon="more-vert"></paper-icon-button>
 
